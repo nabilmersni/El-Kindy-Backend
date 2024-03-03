@@ -5,6 +5,14 @@ const catchAsync = require("../utils/catchAsync");
 const jwt = require("jsonwebtoken");
 const AppError = require("./../utils/appError");
 
+const admin = require("firebase-admin");
+
+const serviceAccount = require("../el-kindy-auth-firebase-serviceAccountKey.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE_IN,
@@ -33,8 +41,12 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.signUp = catchAsync(async (req, res, next) => {
-  if (req.body.role === "admin")
-    return next(new AppError("This route not for sign up admin", 401));
+  if (req.body.role === "admin") {
+    return res.status(401).json({
+      status: "error",
+      message: "This route not for sign up admin",
+    });
+  }
 
   const newUser = await User.create({
     fullname: req.body.fullname,
@@ -48,20 +60,63 @@ exports.signUp = catchAsync(async (req, res, next) => {
     role: req.body.role,
   });
 
-  createSendToken(newUser, 200, res);
+  return res.status(201).json({
+    status: "success",
+    message: "User created successfully!",
+  });
+
+  // createSendToken(newUser, 200, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return next(new AppError("Email and password are required", 401));
+    return res.status(400).json({
+      status: "error",
+      message: "Email and password are required",
+    });
   }
 
   const user = await User.findOne({ email: email }).select("+password"); //select('+password') bech nraj3ou el passworf ijina fil result mta3 el find 5ater fil model 7atin select false
 
   if (!user || !(await user.checkPassword(password, user.password))) {
-    return next(new AppError("Your email or password is incorrect", 401));
+    return res.status(401).json({
+      status: "error",
+      message: "Your email or password is incorrect",
+    });
+  }
+
+  createSendToken(user, 200, res);
+});
+
+exports.authGoogle = catchAsync(async (req, res, next) => {
+  const { email, idToken } = req.body;
+
+  if (!email || !idToken) {
+    return res.status(400).json({
+      status: "error",
+      message: "Email and ID token are required",
+    });
+  }
+
+  const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+  if (email !== decodedToken.email) {
+    return res.status(401).json({
+      status: "error",
+      message: "Email in request does not match email in ID token",
+    });
+  }
+
+  // const user = await User.findOne({ email: email }).select("+password"); //select('+password') bech nraj3ou el passworf ijina fil result mta3 el find 5ater fil model 7atin select false
+  const user = await User.findOne({ email: email });
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "No user with this email!",
+    });
   }
 
   createSendToken(user, 200, res);
@@ -77,15 +132,15 @@ exports.logout = (req, res) => {
 
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
+  if (req.headers.authorization?.startsWith("Bearer")) {
     token = req.headers.authorization.split(" ")[1];
   }
 
   if (!token) {
-    next(new AppError("You're not logged in!", 401));
+    return res.status(401).json({
+      status: "error",
+      message: "You're not logged in!",
+    });
   }
 
   const decodedJwt = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
@@ -93,45 +148,104 @@ exports.protect = catchAsync(async (req, res, next) => {
   const currentUser = await User.findById(decodedJwt.id).select("+password");
 
   if (!currentUser) {
-    next(new AppError("User is no longer exist", 401));
+    return res.status(401).json({
+      status: "error",
+      message: "User is no longer exist",
+    });
   }
 
   if (currentUser.isPassChangedAfterJWT(decodedJwt.iat)) {
-    next(new AppError("User recently changed password! log in again", 401));
+    return res.status(401).json({
+      status: "error",
+      message: "User recently changed password! log in again",
+    });
   }
 
   req.user = currentUser;
   next();
 });
 
-exports.isLoggedIn = async (req, res, next) => {
-  if (req.cookies.jwt) {
-    try {
-      // 1) verify token
-      const decoded = await promisify(jwt.verify)(
-        req.cookies.jwt,
-        process.env.JWT_SECRET
-      );
-
-      // 2) Check if user still exists
-      const currentUser = await User.findById(decoded.id);
-      if (!currentUser) {
-        return next();
-      }
-
-      // 3) Check if user changed password after the token was issued
-      if (currentUser.changedPasswordAfter(decoded.iat)) {
-        return next();
-      }
-
-      // THERE IS A LOGGED IN USER
-      res.locals.user = currentUser;
-      return next();
-    } catch (err) {
-      return next();
-    }
+exports.getLoggedUser = async (req, res, next) => {
+  if (!req.cookies.jwt) {
+    return res.status(200).json({
+      status: "error",
+      user: null,
+    });
   }
-  next();
+
+  try {
+    // 1) verify token
+    const decoded = await promisify(jwt.verify)(
+      req.cookies.jwt,
+      process.env.JWT_SECRET
+    );
+
+    // 2) Check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return res.status(404).json({
+        status: "error",
+        message: "User no longer exist!",
+      });
+    }
+
+    // 3) Check if user changed password after the token was issued
+    // if (currentUser.changedPasswordAfter(decoded.iat)) {
+    //   return next();
+    // }
+
+    return res.status(200).json({
+      status: "success",
+      user: currentUser,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      status: "error",
+      message: err.message,
+    });
+  }
+};
+
+exports.isLoggedIn = async (req, res, next) => {
+  if (!req.cookies.jwt) {
+    return next(
+      res.status(401).json({
+        status: "error",
+        message: "You are not authenticated!",
+      })
+    );
+  }
+
+  try {
+    // 1) verify token
+    const decoded = await promisify(jwt.verify)(
+      req.cookies.jwt,
+      process.env.JWT_SECRET
+    );
+
+    // 2) Check if user still exists
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return res.status(404).json({
+        status: "error",
+        message: "User no longer exist!",
+      });
+    }
+
+    // 3) Check if user changed password after the token was issued
+    // if (currentUser.changedPasswordAfter(decoded.iat)) {
+    //   return next();
+    // }
+
+    // THERE IS A LOGGED IN USER
+    res.user = currentUser;
+    return next();
+  } catch (err) {
+    return res.status(400).json({
+      status: "error",
+      message: err.message,
+    });
+  }
 };
 
 exports.restrictedTo = (...roles) => {
@@ -140,9 +254,10 @@ exports.restrictedTo = (...roles) => {
 
     // if (!roles.find(val => val === currentUser.role)) {
     if (!roles.includes(currentUser.role)) {
-      next(
-        new AppError(`You need to login as ${[...roles]}! log in again`, 401)
-      );
+      return res.status(401).json({
+        status: "error",
+        message: `You need to login as ${[...roles]}! log in again`,
+      });
     }
     next();
   };

@@ -6,9 +6,11 @@ const router = express.Router();
 
 router.post("/signup", authController.signUp);
 router.post("/login", authController.login);
+router.post("/auth/google", authController.authGoogle);
 router.post("/logout", authController.logout);
+router.get("/get/loggedUser", authController.getLoggedUser);
 
-router.get("/", userController.getAllUsers);
+router.get("/", authController.isLoggedIn, userController.getAllUsers);
 
 router
   .route("/:id")
