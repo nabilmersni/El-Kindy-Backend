@@ -6,7 +6,7 @@ const AppError = require("./utils/appError");
 const app = express();
 
 app.use(express.json());
-
+ console.log("bonjour la vie")
 if (process.env.NODE_ENV === "dev") {
   app.use(morgan("dev"));
 }
