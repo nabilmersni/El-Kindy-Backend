@@ -122,12 +122,77 @@ exports.authGoogle = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-exports.logout = (req, res) => {
-  res.cookie("jwt", "loggedout", {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true,
+exports.faceIDRegistration = catchAsync(async (req, res, next) => {
+  if (req.loggedInUser.faceIDState) {
+    return res.status(400).json({
+      status: "error",
+      message: "faceID already configured",
+    });
+  }
+  console.log(req.body);
+  const { faceID } = req.body;
+
+  if (!faceID) {
+    return res.status(400).json({
+      status: "error",
+      message: "faceID are required",
+    });
+  }
+
+  if (req.params.id !== req.loggedInUser._id.toString()) {
+    // console.log(req.params.id , req.loggedInUser._id)
+    return res.status(401).json({
+      status: "error",
+      message: "What are you doing little hacker",
+    });
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.params.id,
+    { faceID, faceIDState: true },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      user: updatedUser,
+    },
   });
-  res.status(200).json({ status: "success" });
+});
+
+exports.authFaceID = catchAsync(async (req, res, next) => {
+  const { email, faceID } = req.body;
+
+  if (!email || !faceID) {
+    return res.status(400).json({
+      status: "error",
+      message: "Email and faceID are required",
+    });
+  }
+
+  const user = await User.findOne({ email, faceID });
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "No user with this faceID!",
+    });
+  }
+
+  createSendToken(user, 200, res);
+});
+
+exports.logout = (req, res) => {
+  // res.cookie("jwt", "loggedout", {
+  //   expires: new Date(Date.now() + 10 * 1000),
+  //   httpOnly: true,
+  // });
+  res.clearCookie("jwt");
+  res.status(200).json({ status: "success", message: "Signout successfully!" });
 };
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -161,7 +226,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     });
   }
 
-  req.user = currentUser;
+  req.loggedInUser = currentUser;
   next();
 });
 
@@ -238,7 +303,7 @@ exports.isLoggedIn = async (req, res, next) => {
     // }
 
     // THERE IS A LOGGED IN USER
-    res.user = currentUser;
+    req.loggedInUser = currentUser;
     return next();
   } catch (err) {
     return res.status(400).json({

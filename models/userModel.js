@@ -82,6 +82,8 @@ const userSchema = new mongoose.Schema({
     ],
   },
   changePasswordAt: Date,
+  faceID: { type: String, select: false },
+  faceIDState: { type: Boolean, default: false },
 });
 
 userSchema.pre("save", async function (next) {

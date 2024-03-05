@@ -7,10 +7,18 @@ const router = express.Router();
 router.post("/signup", authController.signUp);
 router.post("/login", authController.login);
 router.post("/auth/google", authController.authGoogle);
+router.post(
+  "/auth/faceIDRegistration/:id",
+  authController.isLoggedIn,
+  authController.faceIDRegistration
+);
+router.post("/auth/faceID", authController.authFaceID);
+
 router.post("/logout", authController.logout);
 router.get("/get/loggedUser", authController.getLoggedUser);
 
-router.get("/", authController.isLoggedIn, userController.getAllUsers);
+// router.get("/", authController.isLoggedIn, userController.getAllUsers);
+router.get("/", userController.getAllUsers);
 
 router
   .route("/:id")
