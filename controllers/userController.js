@@ -1,6 +1,5 @@
 const User = require("./../models/userModel");
 const catchAsync = require("./../utils/catchAsync");
-const AppError = require("./../utils/appError");
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -11,7 +10,18 @@ const filterObj = (obj, ...allowedFields) => {
 };
 
 exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
+  let query = {};
+
+  // Check if excludeUserId parameter exists in the request query
+  if (req.query.excludeUserId) {
+    // Exclude the specified user ID from the query
+    query = { _id: { $ne: req.query.excludeUserId } };
+  }
+
+  // Find users based on the query
+  const users = await User.find(query);
+
+  // const users = await User.find();
 
   res.status(200).json({
     status: "success",
@@ -24,7 +34,13 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 
 exports.getUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
-  if (!user) return next(new AppError("User not found", 404));
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
 
   res.status(200).json({
     status: "success",
@@ -49,7 +65,13 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     new: true,
     runValidators: true,
   });
-  if (!user) next(new AppError("User not found", 404));
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
 
   res.status(200).json({
     status: "success",
@@ -62,10 +84,16 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 exports.blockUser = catchAsync(async (req, res, next) => {
   const user = await User.findByIdAndUpdate(
     req.params.id,
-    { state: false },
+    { state: req.body.state },
     { new: true }
   );
-  if (!user) next(new AppError("User not found", 404));
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
 
   res.status(200).json({
     status: "success",

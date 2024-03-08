@@ -7,31 +7,26 @@ const router = express.Router();
 router.post("/signup", authController.signUp);
 router.post("/login", authController.login);
 router.post("/auth/google", authController.authGoogle);
-router.post(
-  "/auth/faceIDRegistration/:id",
-  authController.isLoggedIn,
-  authController.faceIDRegistration
-);
 router.post("/auth/faceID", authController.authFaceID);
-
 router.post("/logout", authController.logout);
-router.get("/get/loggedUser", authController.getLoggedUser);
-
-// router.get("/", authController.isLoggedIn, userController.getAllUsers);
-router.get("/", userController.getAllUsers);
 
 router
   .route("/:id")
   .get(userController.getUser)
   .patch(userController.updateUser);
 
-router.patch("/block/:id", userController.blockUser);
-router.post("/updateMe", authController.isLoggedIn, userController.updateMe);
-// router.post("/updateMe", userController.updateMe);
-
 // Protect all routes after this middleware
-// router.use(authController.protect);
+router.use(authController.isLoggedIn);
 
-// router.use(authController.restrictTo("admin"));
+router.post("/auth/faceIDRegistration/:id", authController.faceIDRegistration);
+router.post("/updateMe", userController.updateMe);
+
+// only admin routes
+router.get(
+  "/",
+  authController.restrictedTo("admin"),
+  userController.getAllUsers
+);
+router.patch("/block/:id", userController.blockUser);
 
 module.exports = router;
