@@ -26,6 +26,8 @@ router
   .patch(userController.updateUser);
 
 router.patch("/block/:id", userController.blockUser);
+router.post("/updateMe", authController.isLoggedIn, userController.updateMe);
+// router.post("/updateMe", userController.updateMe);
 
 // Protect all routes after this middleware
 // router.use(authController.protect);

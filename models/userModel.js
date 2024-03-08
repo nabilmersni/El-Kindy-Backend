@@ -53,7 +53,8 @@ const userSchema = new mongoose.Schema({
   },
   photo_url: {
     type: String,
-    default: "default.png",
+    default:
+      "https://firebasestorage.googleapis.com/v0/b/el-kindy-auth.appspot.com/o/defaultProfileIMG.png?alt=media&token=3195bf63-8036-4290-9583-f0f4da435935",
     // required: [true, 'A user must have a photo']
   },
   cv_url: {

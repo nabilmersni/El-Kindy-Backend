@@ -41,8 +41,10 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "dateOfBirth",
     "phone",
     "phone2",
-    "proffesion"
+    "profession",
+    "photo_url"
   );
+
   const user = await User.findByIdAndUpdate(req.params.id, filtredBody, {
     new: true,
     runValidators: true,
@@ -64,6 +66,34 @@ exports.blockUser = catchAsync(async (req, res, next) => {
     { new: true }
   );
   if (!user) next(new AppError("User not found", 404));
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      user,
+    },
+  });
+});
+
+exports.updateMe = catchAsync(async (req, res, next) => {
+  const filtredBody = filterObj(
+    req.body,
+    "fullname",
+    "dateOfBirth",
+    "phone",
+    "phone2",
+    "profession",
+    "photo_url"
+  );
+
+  // if (!filtredBody.photo_url) {
+  //   filtredBody.photo_url = req.loggedInUser.photo_url;
+  // }
+
+  const user = await User.findByIdAndUpdate(req.loggedInUser._id, filtredBody, {
+    new: true,
+    runValidators: true,
+  });
 
   res.status(200).json({
     status: "success",
