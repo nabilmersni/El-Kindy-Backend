@@ -108,6 +108,10 @@ userSchema.pre("save", function (next) {
 //   next();
 // });
 
+// userSchema.methods.cryptPassword = async function (password) {
+//   return await bcrypt.hash(password, 12);
+// };
+
 userSchema.methods.checkPassword = async function (candidatePass, userPass) {
   //this.password najmouch 5ater select false
   return await bcrypt.compare(candidatePass, userPass);

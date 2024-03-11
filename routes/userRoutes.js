@@ -9,6 +9,9 @@ router.post("/login", authController.login);
 router.post("/auth/google", authController.authGoogle);
 router.post("/auth/faceID", authController.authFaceID);
 router.post("/logout", authController.logout);
+router.post("/verifyEmail", authController.verifyEmail);
+router.post("/forgotPasswordRequest", authController.forgotPasswordRequest);
+router.post("/forgotPassword", authController.forgotPassword);
 
 router
   .route("/:id")
@@ -27,6 +30,7 @@ router.get(
   authController.restrictedTo("admin"),
   userController.getAllUsers
 );
+router.post("/addUser", userController.addser);
 router.patch("/block/:id", userController.blockUser);
 
 module.exports = router;

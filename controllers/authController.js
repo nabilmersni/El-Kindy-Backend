@@ -1,10 +1,18 @@
 const { promisify } = require("util");
-
+const jwt = require("jsonwebtoken");
+const admin = require("firebase-admin");
 const User = require("./../models/userModel");
 const catchAsync = require("../utils/catchAsync");
-const jwt = require("jsonwebtoken");
+const { sendEmail } = require("../utils/sendMail");
+const fs = require("fs");
+const bcrypt = require("bcryptjs");
 
-const admin = require("firebase-admin");
+const emailTemplateBody = fs.readFileSync(
+  "./public/emailTemplate.html",
+  "utf-8"
+);
+const activationLink = "http://localhost:5173/verifyEmail";
+const forgotPasswordLink = "http://localhost:5173/forgotPassword";
 
 const serviceAccount = require("../el-kindy-auth-firebase-serviceAccountKey.json");
 
@@ -12,9 +20,9 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-const signToken = (id) => {
+const signToken = (id, expiresIn = process.env.JWT_EXPIRE_IN) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE_IN,
+    expiresIn,
   });
 };
 
@@ -59,6 +67,18 @@ exports.signUp = catchAsync(async (req, res, next) => {
     role: req.body.role,
   });
 
+  const token = signToken(newUser._id, process.env.JWT_EXPIRE_IN_EMAIL);
+
+  await sendEmail(
+    // "justtrash010@gmail.com",
+    newUser.email,
+    "Confirm Email",
+    emailTemplateBody
+      .replace("${activationLink}", `${activationLink}/${token}`)
+      .replace("${headerTitle}", "Welcome to EL Kindy family.")
+      .replace("${BtnLabel}", "Activate My Account")
+  );
+
   return res.status(201).json({
     status: "success",
     message: "User created successfully!",
@@ -82,6 +102,33 @@ exports.login = catchAsync(async (req, res, next) => {
     return res.status(401).json({
       status: "error",
       message: "Your email or password is incorrect",
+    });
+  }
+
+  if (!user.state) {
+    return res.status(401).json({
+      status: "error",
+      message: "Your account is locked. please contact the administration.",
+    });
+  }
+
+  if (!user.isEmailVerified) {
+    const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
+
+    await sendEmail(
+      // "justtrash010@gmail.com",
+      user.email,
+      "Confirm Email",
+      emailTemplateBody
+        .replace("${activationLink}", `${activationLink}/${token}`)
+        .replace("${headerTitle}", "Welcome to EL Kindy family.")
+        .replace("${BtnLabel}", "Activate My Account")
+    );
+
+    return res.status(401).json({
+      status: "error",
+      message:
+        "Please active your account, we resend a verification email to you.",
     });
   }
 
@@ -299,3 +346,162 @@ exports.restrictedTo = (...roles) => {
     next();
   };
 };
+
+exports.verifyEmail = catchAsync(async (req, res, next) => {
+  if (!req.body.token) {
+    return res.status(401).json({
+      status: "error",
+      message: "token is required",
+    });
+  }
+
+  try {
+    const decoded = await promisify(jwt.verify)(
+      req.body.token,
+      process.env.JWT_SECRET
+    );
+
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is already verified",
+      });
+    }
+
+    await User.findByIdAndUpdate(
+      decoded.id,
+      { isEmailVerified: true },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    if (error.message === "jwt expired") {
+      // const expiredToken = jwt.decode(req.body.token);
+      const expiredToken = jwt.verify(req.body.token, process.env.JWT_SECRET, {
+        ignoreExpiration: true,
+      });
+
+      const user = await User.findById(expiredToken.id);
+
+      if (!user) {
+        return res.status(404).json({
+          status: "error",
+          message: "User no longer exist",
+        });
+      }
+
+      const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
+
+      await sendEmail(
+        // "justtrash010@gmail.com",
+        user.email,
+        "Forgot Password Request",
+        emailTemplateBody
+          .replace("${activationLink}", `${activationLink}/${token}`)
+          .replace("${headerTitle}", "Welcome to EL Kindy family.")
+          .replace("${BtnLabel}", "Activate My Account")
+      );
+
+      return res.status(400).json({
+        status: "error",
+        message: "token expired, we resend a verification email to you.",
+      });
+    }
+  }
+});
+
+exports.forgotPasswordRequest = catchAsync(async (req, res, next) => {
+  if (!req.body.email) {
+    return res.status(400).json({
+      status: "error",
+      message: "email is required",
+    });
+  }
+
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "No user linked to this Email!",
+    });
+  }
+
+  const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
+
+  await sendEmail(
+    // "justtrash010@gmail.com",
+    user.email,
+    "Forgot Password Request",
+    emailTemplateBody
+      .replace("${activationLink}", `${forgotPasswordLink}/${token}`)
+      .replace(
+        "${headerTitle}",
+        "We recently received a request to reset your password"
+      )
+      .replace("${BtnLabel}", "Reset My Password")
+  );
+
+  return res.status(200).json({
+    status: "success",
+    message: "Password Reset Request was sent to your email",
+  });
+});
+
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+  let token;
+  const { password, confirmPassword } = req.body;
+
+  if (!password || !confirmPassword || password !== confirmPassword) {
+    return res.status(400).json({
+      status: "error",
+      message: "password and confirmPassword are required and must match",
+    });
+  }
+
+  if (req.headers.authorization?.startsWith("Bearer")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (!token) {
+    return res.status(401).json({
+      status: "error",
+      message: "token is required",
+    });
+  }
+
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  const cryptedPassword = await bcrypt.hash(password, 12);
+
+  const user = await User.findByIdAndUpdate(
+    decoded.id,
+    { password: cryptedPassword },
+    { new: true }
+  );
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
+
+  return res.status(200).json({
+    status: "success",
+    message: "Password changed successfully",
+  });
+});
