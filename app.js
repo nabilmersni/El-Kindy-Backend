@@ -4,6 +4,8 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 const userRouter = require("./routes/userRoutes");
+const chatRoute = require("./routes/chatRoute");
+const messageRoute = require("./routes/messageRoute");
 const { required } = require("nodemon/lib/config");
 
 const app = express();
@@ -26,5 +28,7 @@ if (process.env.NODE_ENV === "dev") {
 app.use(express.static(`${__dirname}/public`)); //for serving static files
 
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/chats", chatRoute);
+app.use("/api/v1/messages", messageRoute);
 
 module.exports = app;

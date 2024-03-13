@@ -28,10 +28,10 @@ const filterObj = (obj, ...allowedFields) => {
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   let query = {};
 
-  // Check if excludeUserId parameter exists in the request query
   if (req.query.excludeUserId) {
-    // Exclude the specified user ID from the query
-    query = { _id: { $ne: req.query.excludeUserId } };
+    const excludeUserIdArray = req.query.excludeUserId.split(",");
+
+    query = { _id: { $nin: excludeUserIdArray } };
   }
 
   // Find users based on the query

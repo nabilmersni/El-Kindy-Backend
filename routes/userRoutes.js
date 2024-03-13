@@ -27,7 +27,7 @@ router.post("/updateMe", userController.updateMe);
 // only admin routes
 router.get(
   "/",
-  authController.restrictedTo("admin"),
+  // authController.restrictedTo("admin"),
   userController.getAllUsers
 );
 router.post("/addUser", userController.addser);
