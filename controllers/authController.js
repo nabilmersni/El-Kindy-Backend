@@ -163,6 +163,26 @@ exports.authGoogle = catchAsync(async (req, res, next) => {
     });
   }
 
+  if (!user.isEmailVerified) {
+    const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
+
+    await sendEmail(
+      // "justtrash010@gmail.com",
+      user.email,
+      "Confirm Email",
+      emailTemplateBody
+        .replace("${activationLink}", `${activationLink}/${token}`)
+        .replace("${headerTitle}", "Welcome to EL Kindy family.")
+        .replace("${BtnLabel}", "Activate My Account")
+    );
+
+    return res.status(401).json({
+      status: "error",
+      message:
+        "Please active your account, we resend a verification email to you.",
+    });
+  }
+
   createSendToken(user, 200, res);
 });
 
