@@ -3,6 +3,7 @@ const morgan = require("morgan");
 const cors = require("cors");
 //const clubRoutes = require("./routes/clubRoutes");
 const quizRoutes = require("./routes/quizRoutes")
+const eventRoute = require("./routes/EventRoute")
 const AppError = require("./utils/appError");
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(cors({
 
 
 app.use("/quizs", quizRoutes);
+app.use("/events", eventRoute);
 
 
 module.exports = app;
