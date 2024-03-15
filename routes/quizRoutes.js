@@ -26,7 +26,7 @@ router.get("/:id/users", quizController.getUsers);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./upload-directory");
+    cb(null, "./public/upload-directory");
   },
   filename: function (req, file, cb) {
     cb(null, file.originalname);
@@ -56,6 +56,7 @@ router.post("/:id/questions", upload.single("image"), (req, res) => {
     );
   }
 });
+router.post("/:id/image", QuestionController.uploadImage);
 
 router.get("/:quizId/questions", (req, res) => {
   getQuestionsForQuiz(req.params.quizId, res);

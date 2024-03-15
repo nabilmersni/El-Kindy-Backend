@@ -2,6 +2,7 @@ const path = require("path");
 const Question = require("../models/Question");
 const Quiz = require("../models/Quiz");
 const fs = require("fs");
+const multer = require("multer");
 const QuizSchema = require("../models/Quiz");
 
 async function createQuestionForQuiz(_id, questionText, nbPoint, image, res) {
@@ -25,6 +26,7 @@ async function createQuestionForQuiz(_id, questionText, nbPoint, image, res) {
     });
   }
 }
+
 async function getQuestionsForQuiz(quizId, res) {
   try {
     const quiz = await Quiz.findById(quizId).populate("questions");
@@ -82,6 +84,59 @@ const updateQuestionInQuiz = async (req, res) => {
     console.error("Error updating question in quiz:", error.message);
     res.status(500).json({ message: "Internal server error" });
   }
+};
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/upload-directory");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type. Only images are allowed."), false);
+  }
+};
+
+const upload = multer({ storage: storage, fileFilter: fileFilter }).single(
+  "image"
+);
+
+const uploadImage = async (req, res) => {
+  const { id } = req.params;
+
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(500).json({ message: err.message });
+    }
+
+    try {
+      const question = await Question.findById(id);
+      if (!question) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Get the file name from the file path
+      const fileName = req.file.filename;
+
+      // Update the image field with the file name
+      question.image = fileName;
+
+      await question.save();
+
+      res.json(question);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
 };
 
 const getQuestionById = async (quizId, questionId) => {
@@ -146,4 +201,5 @@ module.exports = {
   getQuestionsForQuiz,
   getQuestionById,
   updateQuestionInQuiz,
+  uploadImage,
 };

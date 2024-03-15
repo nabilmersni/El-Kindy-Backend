@@ -78,9 +78,15 @@ exports.assignUserToQuiz = async (req, res) => {
     }
     quiz.users.push(user._id);
     await quiz.save();
-    return res
-      .status(200)
-      .json({ message: "Utilisateur attribué avec succès au quiz" });
+    // return res
+    //   .status(200)
+    //   .json({ message: "Utilisateur attribué avec succès au quiz" });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Utilisateur attribué avec succès au quiz",
+      user,
+    });
   } catch (error) {
     console.error(error);
     return res
