@@ -12,6 +12,7 @@ const AppError = require("./utils/appError");
 const userRouter = require("./routes/userRoutes");
 const chatRoute = require("./routes/chatRoute");
 const messageRoute = require("./routes/messageRoute");
+const karaokeRoute = require("./routes/karaokeRoute");
 // user routes
 
 const courseRoutes = require("./routes/courseRoutes.js");
@@ -48,5 +49,6 @@ app.use("/availableDates", availableDatesRoutes);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/chats", chatRoute);
 app.use("/api/v1/messages", messageRoute);
+app.use("/api/v1/karaoke", karaokeRoute);
 
 module.exports = app;

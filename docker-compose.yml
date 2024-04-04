@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  app:
+    build: .
+    image: 172.16.8.124:8083/elkindynodeapp:6.0
+    restart: always
+    container_name: back
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./upload-directory:/app/upload-directory

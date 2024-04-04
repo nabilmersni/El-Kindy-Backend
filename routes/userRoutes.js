@@ -13,24 +13,49 @@ router.post("/verifyEmail", authController.verifyEmail);
 router.post("/forgotPasswordRequest", authController.forgotPasswordRequest);
 router.post("/forgotPassword", authController.forgotPassword);
 
-router
-  .route("/:id")
-  .get(userController.getUser)
-  .patch(userController.updateUser);
+router.route("/:id").get(userController.getUser);
+// .patch(userController.updateUser);
 
 // Protect all routes after this middleware
 router.use(authController.isLoggedIn);
 
 router.post("/auth/faceIDRegistration/:id", authController.faceIDRegistration);
 router.post("/updateMe", userController.updateMe);
+router.patch("/user/changePassword", authController.changePassword);
 
-// only admin routes
 router.get(
   "/",
   // authController.restrictedTo("admin"),
   userController.getAllUsers
 );
-router.post("/addUser", userController.addser);
-router.patch("/block/:id", userController.blockUser);
+
+router.get("/get/loggedUser", authController.getLoggedUser);
+
+// only admin routes
+router.get(
+  "/count/stats",
+  authController.restrictedTo("admin"),
+  userController.getUserCounts
+);
+router.post(
+  "/addUser",
+  authController.restrictedTo("admin"),
+  userController.addser
+);
+router.patch(
+  "/block/:id",
+  authController.restrictedTo("admin"),
+  userController.blockUser
+);
+router.patch(
+  "/:id",
+  authController.restrictedTo("admin"),
+  userController.updateUser
+);
+router.patch(
+  "/acceptCV/:id",
+  authController.restrictedTo("admin"),
+  userController.acceptCV
+);
 
 module.exports = router;

@@ -18,6 +18,7 @@ const serviceAccount = require("../el-kindy-auth-firebase-serviceAccountKey.json
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  storageBucket: "el-kindy-auth.appspot.com",
 });
 
 const signToken = (id, expiresIn = process.env.JWT_EXPIRE_IN) => {
@@ -65,6 +66,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
     password: req.body.password,
     confirmPassword: req.body.confirmPassword,
     role: req.body.role,
+    cv_url: req.body.cv_url,
   });
 
   const token = signToken(newUser._id, process.env.JWT_EXPIRE_IN_EMAIL);
@@ -253,41 +255,6 @@ exports.logout = (req, res) => {
   res.clearCookie("jwt");
   res.status(200).json({ status: "success", message: "Signout successfully!" });
 };
-
-exports.protect = catchAsync(async (req, res, next) => {
-  let token;
-  if (req.headers.authorization?.startsWith("Bearer")) {
-    token = req.headers.authorization.split(" ")[1];
-  }
-
-  if (!token) {
-    return res.status(401).json({
-      status: "error",
-      message: "You're not logged in!",
-    });
-  }
-
-  const decodedJwt = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-
-  const currentUser = await User.findById(decodedJwt.id).select("+password");
-
-  if (!currentUser) {
-    return res.status(401).json({
-      status: "error",
-      message: "User is no longer exist",
-    });
-  }
-
-  if (currentUser.isPassChangedAfterJWT(decodedJwt.iat)) {
-    return res.status(401).json({
-      status: "error",
-      message: "User recently changed password! log in again",
-    });
-  }
-
-  req.loggedInUser = currentUser;
-  next();
-});
 
 exports.getLoggedUser = async (req, res, next) => {
   if (!req.cookies.jwt) {
@@ -519,6 +486,44 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
       message: "User not found",
     });
   }
+
+  return res.status(200).json({
+    status: "success",
+    message: "Password changed successfully",
+  });
+});
+
+exports.changePassword = catchAsync(async (req, res, next) => {
+  const { oldPassword, password, confirmPassword } = req.body;
+
+  if (!oldPassword || !password || !confirmPassword) {
+    return res.status(400).json({
+      status: "error",
+      message:
+        "Current password, new password, and confirm new password are required",
+    });
+  }
+
+  const user = await User.findById(req.loggedInUser.id).select("+password");
+
+  if (!(await user.checkPassword(oldPassword, user.password))) {
+    return res.status(401).json({
+      status: "error",
+      message: "Current password is incorrect",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      status: "error",
+      message: "New password and confirm new password do not match",
+    });
+  }
+  const cryptedPassword = await bcrypt.hash(password, 12);
+  user.password = password;
+  user.confirmPassword = confirmPassword;
+
+  await user.save();
 
   return res.status(200).json({
     status: "success",

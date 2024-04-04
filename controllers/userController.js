@@ -111,6 +111,19 @@ exports.blockUser = catchAsync(async (req, res, next) => {
     });
   }
 
+  await sendEmail(
+    user.email,
+    "Your EL Kindy account has been suspended.",
+    emailTemplateBody
+      .replace("${activationLink}", `http://localhost:5173/login`)
+      .replace(
+        "${headerTitle}",
+        "Your EL Kindy account has been suspended. Reasons for suspension: " +
+          req.body.blockReasons
+      )
+      .replace("${BtnLabel}", "Contact the administration")
+  );
+
   res.status(200).json({
     status: "success",
     data: {
@@ -181,6 +194,66 @@ exports.addser = catchAsync(async (req, res, next) => {
     message: "User created successfully!",
     data: {
       user: newUser,
+    },
+  });
+});
+
+exports.getUserCounts = catchAsync(async (req, res, next) => {
+  const totalUserCount = await User.countDocuments();
+
+  const roleCounts = await User.aggregate([
+    {
+      $group: {
+        _id: "$role",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const roleCountMap = {};
+  roleCounts.forEach((roleCount) => {
+    roleCountMap[roleCount._id] = roleCount.count;
+  });
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      totalUserCount,
+      roleCounts: roleCountMap,
+    },
+  });
+});
+
+exports.acceptCV = catchAsync(async (req, res, next) => {
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { isCvAccepted: true },
+    { new: true }
+  );
+
+  if (!user) {
+    return res.status(404).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
+
+  await sendEmail(
+    user.email,
+    "Teacher Position",
+    emailTemplateBody
+      .replace("${activationLink}", `http://localhost:5173/login`)
+      .replace(
+        "${headerTitle}",
+        "Welcome to the EL Kindy family! Your CV has been reviewed and approved."
+      )
+      .replace("${BtnLabel}", "Start your journey")
+  );
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      user,
     },
   });
 });
