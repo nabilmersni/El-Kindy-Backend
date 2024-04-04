@@ -27,3 +27,20 @@ process.on("unhandledRejection", (err) => {
     process.exit(1);
   });
 });
+
+//-------------------------Mailer ---------------
+const { sendTestEmail } = require("./mailer");
+
+app.get("/send-email", async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      throw new Error("Email not provided");
+    }
+
+    const info = await sendTestEmail(email);
+    res.send(info);
+  } catch (error) {
+    res.status(400).send(error.message);
+  }
+});

@@ -11,6 +11,19 @@ var EventSchema = new Schema({
     EventPlace: String,
     Latitude: Number,  
     Longitude: Number,
+
+    users: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "eventParticipant",
+        },
+      ],
+      tickets: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Ticket" // Update with correct ticket model name
+        },
+      ],
 });
 
 module.exports = mongoose.model('events', EventSchema);

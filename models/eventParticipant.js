@@ -7,22 +7,29 @@ var eventParticipantSchema = new Schema({
     ref: "events",
   },
 
-  users: [
-    {
+    
       user: {
         type: Schema.Types.ObjectId,
         ref: "users",
       },
       role: String,
-    }
-  ],
+    
+  
+  
 });
 
-eventParticipantSchema.methods.getUsers = async function () {
-  console.log("IDs to search:", this.users);
-  return await mongoose.connection.collection("users").find({
-    _id: { $in: this.users.user },
-  });
+
+eventParticipantSchema.statics.getEventsByUserId = async function (userId) {
+  try {
+    const events = await this.find({ user: userId }).populate("event");
+    return events;
+  } catch (error) {
+    throw new Error(
+      "Erreur lors de la récupération des events par l'ID de l'utilisateur"
+    );
+  }
 };
 
-module.exports = mongoose.model("eventParticipant", eventParticipantSchema);
+const eventParticipant = mongoose.model("eventParticipant", eventParticipantSchema);
+
+module.exports = eventParticipant;

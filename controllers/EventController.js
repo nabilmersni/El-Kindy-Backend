@@ -1,65 +1,56 @@
 const path = require("path");
 const Event = require("../models/Event");
-
-
+const eventParticipant = require("../models/eventParticipant");
+const multer = require("multer");
 exports.createEvent = async (req, res) => {
-    try {
-        // Retrieve file information from the request
-        const { filename } = req.file;
+  try {
+    const { filename } = req.file;
 
-        // Create the Event instance with file information
-        const event = new Event({
-            ...req.body,
-            EventImage: filename, // Assuming "image" is the attribute to store the file information
-        });
+    const event = new Event({
+      ...req.body,
+      EventImage: filename,
+    });
 
-        // Save the Event instance to the database
-        await event.save();
+    await event.save();
 
-        res.status(201).json(event);
-    } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
-    }
+    res.status(201).json(event);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 exports.getAllEvents = async (req, res) => {
-    try {
-        const { name } = req.query;
-        let query = {};
+  try {
+    const { name } = req.query;
+    let query = {};
 
-        if (name) {
-            // Case-insensitive search by name
-            query = { nom: { $regex: new RegExp(name, "i") } };
-        }
-        const events = await Event.find(query);
-        res.json(events);
-    } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
+    if (name) {
+      query = { nom: { $regex: new RegExp(name, "i") } };
     }
+    const events = await Event.find(query);
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 exports.getEventById = async (req, res) => {
-    try {
-        const event = await Event.findById(req.params.id);
-        if (!event) {
-            return res.status(404).json({ error: "Event not found" });
-        }
-        res.json(event);
-    } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
     }
+    res.json(event);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
-
-
-const fs = require('fs');
 
 exports.updateEvent = async (req, res) => {
   const id = req.params.id;
 
   try {
-    // Check if there's a new image file
     if (req.file) {
-      // Update EventImage in req.body with the new filename
       req.body.EventImage = req.file.filename;
     }
 
@@ -75,13 +66,84 @@ exports.updateEvent = async (req, res) => {
   }
 };
 exports.deleteEvent = async (req, res) => {
-    try {
-        const event = await Event.findByIdAndDelete(req.params.id);
-        if (!event) {
-            return res.status(404).json({ error: "Event not found" });
-        }
-        res.json(event);
-    } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
+  try {
+    const event = await Event.findByIdAndDelete(req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
     }
+    res.json(event);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+//************************************* */
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/upload-directory");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type. Only images are allowed."), false);
+  }
+};
+
+const upload = multer({ storage: storage, fileFilter: fileFilter }).single(
+  "image"
+);
+
+exports.uploadImage = async (req, res) => {
+  const { id } = req.params;
+
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(500).json({ message: err.message });
+    }
+
+    try {
+      const question = await Question.findById(id);
+      if (!question) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Get the file name from the file path
+      const fileName = req.file.filename;
+
+      // Update the image field with the file name
+      question.image = fileName;
+
+      await question.save();
+
+      res.json(question);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+};
+
+
+exports.getJoinedEvents = async (req, res) => {
+  try {
+    const events = await eventParticipant.find({ userId: req.user.id })
+      .populate("eventId")
+      .select("eventId");
+
+    const joinedEventIds = events.map((event) => event.eventId);
+
+    res.json(joinedEventIds);
+  } catch (error) {
+    console.error('Error in getJoinedEvents:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 };
