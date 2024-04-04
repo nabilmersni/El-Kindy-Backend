@@ -2,7 +2,7 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 //const clubRoutes = require("./routes/clubRoutes");
-const quizRoutes = require("./routes/quizRoutes")
+const quizRoutes = require("./routes/quizRoutes");
 const AppError = require("./utils/appError");
 
 const app = express();
@@ -15,12 +15,12 @@ if (process.env.NODE_ENV === "dev") {
 
 app.use(express.static(`${__dirname}/public`)); //for serving static files
 
-app.use(cors({
-  origin: 'http://localhost:5173' 
-}));
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
 
 app.use("/quizs", quizRoutes);
-
 
 module.exports = app;
