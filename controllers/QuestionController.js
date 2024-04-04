@@ -4,6 +4,7 @@ const Quiz = require("../models/Quiz");
 const fs = require("fs");
 const multer = require("multer");
 const QuizSchema = require("../models/Quiz");
+const Answer = require("../models/Answer");
 
 async function createQuestionForQuiz(_id, questionText, nbPoint, image, res) {
   try {
@@ -123,11 +124,7 @@ const uploadImage = async (req, res) => {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-
-      // Get the file name from the file path
       const fileName = req.file.filename;
-
-      // Update the image field with the file name
       question.image = fileName;
 
       await question.save();
@@ -182,12 +179,12 @@ const deleteQuestionById = async function (quizId, questionId) {
     if (!quiz) {
       throw new Error("Quiz not found");
     }
-    // Supprimer la référence de la question dans le quiz
     quiz.questions.pull(questionId);
     await quiz.save();
-    // Supprimer la question de la table Question
+    await Answer.deleteMany({ question: questionId });
     await Question.findByIdAndDelete(questionId);
-    return true; // Indique que la suppression a réussi
+
+    return true;
   } catch (error) {
     console.error("Error deleting question:", error.message);
     throw new Error("Error deleting question");

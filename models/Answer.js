@@ -9,6 +9,9 @@ var AnswerSchema = new Schema({
     type: Boolean,
     required: true,
   },
+  image: {
+    type: String,
+  },
   question: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Question",

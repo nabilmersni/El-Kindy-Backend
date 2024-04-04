@@ -1,6 +1,10 @@
 const path = require("path");
 const Quiz = require("../models/Quiz");
 const mongoose = require("mongoose");
+const QuizUser = require("../models/QuizUser");
+const Question = require("../models/Question");
+const Answer = require("../models/Answer");
+
 exports.createQuiz = async (req, res) => {
   try {
     const quiz = new Quiz(req.body);
@@ -51,41 +55,66 @@ exports.updateQuiz = async (req, res) => {
 };
 
 exports.deleteQuiz = async (req, res) => {
+  const { id } = req.params;
   try {
-    const quiz = await Quiz.findByIdAndDelete(req.params.id);
+    // Trouver le quiz par son ID
+    const quiz = await Quiz.findById(id);
+
     if (!quiz) {
-      return res.status(404).json({ error: "Quiz not found" });
+      return res.status(404).json({ message: "Quiz not found" });
     }
-    res.json(quiz);
+
+    // Supprimer toutes les questions associées à ce quiz
+    await Question.deleteMany({ _id: { $in: quiz.questions } });
+
+    // Supprimer toutes les réponses associées à ces questions
+    await Answer.deleteMany({ question: { $in: quiz.questions } });
+
+    // Supprimer le quiz par son ID
+    const deletedQuiz = await Quiz.findByIdAndDelete(id);
+
+    // Répondre avec le quiz supprimé
+    res
+      .status(200)
+      .json({ message: "Quiz deleted successfully", quiz: deletedQuiz });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 ///******************* ****************************************/
+
 exports.assignUserToQuiz = async (req, res) => {
   try {
     const { quizId } = req.params;
     const { email } = req.body;
+    // Recherchez le quiz
     const quiz = await Quiz.findById(quizId);
     if (!quiz) {
       return res.status(404).json({ error: "Quiz non trouvé" });
     }
+    // Recherchez l'utilisateur dans la collection users
     const usersCollection = mongoose.connection.collection("users");
     const user = await usersCollection.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
+    // Créez une entrée dans la collection QuizUser
+    const quizUser = new QuizUser({
+      user: user._id,
+      quiz: quiz._id,
+    });
+    await quizUser.save();
+    // Ajoutez l'utilisateur à la liste des utilisateurs du quiz
     quiz.users.push(user._id);
     await quiz.save();
-    // return res
-    //   .status(200)
-    //   .json({ message: "Utilisateur attribué avec succès au quiz" });
 
     return res.status(200).json({
       status: "success",
       message: "Utilisateur attribué avec succès au quiz",
       user,
+      quiz,
     });
   } catch (error) {
     console.error(error);
@@ -97,13 +126,167 @@ exports.assignUserToQuiz = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
-    if (!quiz) return res.status(404).json({ error: "Quiz not found" });
-    const usersCursor = await quiz.getUsers();
-    const users = await usersCursor.toArray();
-    console.log("Users:", users);
-    res.json(users);
-  } catch (err) {
-    return res.status(500).json({ error: err });
+    const { quizId } = req.params;
+    // Recherchez les entrées QuizUser associées à l'ID du quiz
+    const quizUsers = await QuizUser.find({ quiz: quizId });
+    // Extrayez les IDs des utilisateurs de la liste des entrées QuizUser
+    const userIds = quizUsers.map((quizUser) => quizUser.user);
+    // Utilisez les IDs des utilisateurs pour rechercher directement les utilisateurs dans la collection "users"
+    const users = await mongoose.connection
+      .collection("users")
+      .find({ _id: { $in: userIds } })
+      .toArray();
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Erreur lors de la récupération des utilisateurs par ID de quiz",
+    });
+  }
+};
+exports.updateIsStarted = async (userId, quizId, isStarted) => {
+  try {
+    const updatedQuizUser = await QuizUser.findOneAndUpdate(
+      { user: userId, quiz: quizId },
+      { $set: { isStarted: isStarted } }
+      //{ new: true }
+    );
+
+    return updatedQuizUser;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de isStarted:", error);
+    throw error;
+  }
+};
+
+exports.getStartedQuizzesByUserId = async (userId) => {
+  try {
+    const startedQuizzes = await QuizUser.find({
+      user: userId,
+      isStarted: true,
+    }).populate("quiz");
+    return startedQuizzes;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des quiz démarrés:", error);
+    throw error;
+  }
+};
+// exports.getQuizzesByUserId = async (req, res) => {
+//   const userId = req.params.userId;
+//   try {
+//     const quizzes = await QuizUser.getQuizzesByUserId(userId);
+//     res.json(quizzes);
+//   } catch (error) {
+//     console.error("Erreur lors de la récupération des quiz :", error);
+//     res.status(500).json({
+//       message: "Une erreur s'est produite lors de la récupération des quiz.",
+//     });
+//   }
+// };
+exports.getQuizzesByUserId = async (req, res) => {
+  const userId = req.params.userId; // Récupération de l'ID de l'utilisateur depuis les paramètres de l'URL
+  try {
+    // Appel de la méthode avec l'ID de l'utilisateur
+    const quizzes = await QuizUser.getQuizzesByUserId(userId);
+    res.json(quizzes);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des quiz :", error);
+    res.status(500).json({
+      message: "Une erreur s'est produite lors de la récupération des quiz.",
+    });
+  }
+};
+
+// exports.getQuizWithQuestionsAndAnswers = async (req, res, next) => {
+//   try {
+//     const quizId = req.params.quizId; // Supposant que vous passez l'ID du quiz via les paramètres d'URL
+//     const quiz = await Quiz.getQuizWithQuestionsAndAnswers(quizId);
+//     res.json(quiz);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+//********************************************************** */
+
+exports.getQuizWithQuestionsAndAnswers = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+    const quizId = req.params.quizId;
+
+    // Vérifier si l'utilisateur a accès à ce quiz
+    const quizUser = await QuizUser.findOne({ user: userId, quiz: quizId });
+    if (!quizUser) {
+      return res.status(404).json({ message: "Quiz not found for this user" });
+    }
+
+    const quiz = await Quiz.findById(quizId).populate({
+      path: "questions",
+      populate: {
+        path: "answers",
+      },
+    });
+    res.json(quiz);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.removeUserFromQuiz = async (req, res) => {
+  const { userId, quizId } = req.params;
+
+  try {
+    // Supprimer l'utilisateur du quiz
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    quiz.users = quiz.users.filter(
+      (user) => user.toString() !== userId.toString()
+    );
+    await quiz.save();
+
+    // Supprimer le lien dans QuizUser
+    await QuizUser.deleteOne({ user: userId, quiz: quizId });
+
+    res.json({ message: "User removed from quiz successfully" });
+  } catch (error) {
+    console.error("Error removing user from quiz:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.getQuizUser = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+    const quizId = req.params.quizId;
+    // Vérifier si l'utilisateur a accès à ce quiz
+    const quizUser = await QuizUser.findOne({ user: userId, quiz: quizId });
+    if (!quizUser) {
+      return res.status(404).json({ message: "quiz user not found" });
+    }
+    res.json(quizUser);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.QuizUserStarted = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+    const quizId = req.params.quizId;
+    // Vérifier si l'utilisateur a accès à ce quiz
+    //const quizUser = await QuizUser.findOne({ user: userId, quiz: quizId });
+    const quizUser = await QuizUser.findOneAndUpdate(
+      { user: userId, quiz: quizId },
+      { $set: { isCompleted: true } },
+      { new: true }
+    );
+    if (!quizUser) {
+      return res.status(404).json({ message: "quiz user not found" });
+    }
+    res.json(quizUser);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

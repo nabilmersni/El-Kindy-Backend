@@ -1,14 +1,29 @@
-const Question = require("./Question");
 const mongoose = require("mongoose");
 var Schema = mongoose.Schema;
+const LevelEnum = [
+  "Initiation",
+  "Preparatoire",
+  "1er",
+  "2eme",
+  "3eme",
+  "4eme",
+  "5eme",
+  "6eme",
+  "Diplome",
+  "1er Adulte",
+  "2eme Adulte",
+  "3eme Adulte",
+];
 var QuizSchema = new Schema({
   quizName: String,
   description: String,
   nbQuestions: Number,
   quizDuration: Number,
-  quizStartDate: Date,
-  quizEndDate: Date,
-  level: String,
+
+  level: {
+    type: String,
+    enum: LevelEnum,
+  },
   questions: [
     {
       type: Schema.Types.ObjectId,
@@ -18,16 +33,10 @@ var QuizSchema = new Schema({
   users: [
     {
       type: Schema.Types.ObjectId,
-      ref: "users",
+      ref: "QuizUser",
     },
   ],
 });
 
-QuizSchema.methods.getUsers = async function () {
-  console.log("IDs to search:", this.users);
-  return await mongoose.connection.collection("users").find({
-    _id: { $in: this.users },
-  });
-};
 const Quiz = mongoose.model("Quiz", QuizSchema);
 module.exports = Quiz;
