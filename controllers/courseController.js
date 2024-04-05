@@ -1,11 +1,33 @@
 const Course = require("../models/course");
 const multer = require("multer");
 const path = require("path");
+const SubCategory = require("../models/subCategory");
+
+// exports.createCourse = async (req, res) => {
+//   try {
+//     const course = new Course(req.body);
+//     await course.save();
+//     res.status(201).json(course);
+//   } catch (error) {
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// };
 
 exports.createCourse = async (req, res) => {
   try {
+    const { subCategoryId } = req.body;
+
     const course = new Course(req.body);
+
     await course.save();
+
+    const subCategory = await SubCategory.findById(subCategoryId);
+    if (!subCategory) {
+      return res.status(404).json({ error: "SubCategory not found" });
+    }
+    subCategory.courses.push(course._id);
+    await subCategory.save();
+
     res.status(201).json(course);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });

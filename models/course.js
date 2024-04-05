@@ -8,6 +8,11 @@ const courseSchema = new mongoose.Schema({
   courseCategory: String,
   courseLevel: String,
   coursePrice: Number,
+  subCategoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SubCategory",
+    required: true,
+  },
 });
 
 const Course = mongoose.model("Course", courseSchema);

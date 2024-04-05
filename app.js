@@ -15,10 +15,17 @@ const messageRoute = require("./routes/messageRoute");
 const karaokeRoute = require("./routes/karaokeRoute");
 // user routes
 
+//course routes
 const courseRoutes = require("./routes/courseRoutes.js");
 const categoryRoutes = require("./routes/categoriesRoutes.js");
+const subCategoryRoutes = require("./routes/subCategoriesRoutes.js");
+const availabilitiesRoutes = require("./routes/availabilitiesRoutes.js");
+const userAvailabilitiesRoutes = require("./routes/userAvailabilitiesRoutes.js");
+const groupsRoutes = require("./routes/groupRoutes.js");
+const groupAvailabilitiesRoutes = require("./routes/groupAvailabilitiesRoutes.js");
+
 const classroomRoutes = require("./routes/classroomRoutes.js");
-const availableDatesRoutes = require("./routes/availableDates.js");
+//end course routes
 
 const app = express();
 
@@ -41,10 +48,18 @@ app.use(
 
 app.use("/quizs", quizRoutes);
 app.use("/events", eventRoute);
+
+//course
 app.use("/courses", courseRoutes);
 app.use("/categories", categoryRoutes);
+app.use("/subCategories", subCategoryRoutes);
+app.use("/availabilities", availabilitiesRoutes);
+app.use("/userAvailabilities", userAvailabilitiesRoutes);
+app.use("/groups", groupsRoutes);
+app.use("/groupAvailabilities", groupAvailabilitiesRoutes);
+
 app.use("/classrooms", classroomRoutes);
-app.use("/availableDates", availableDatesRoutes);
+//end course
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/chats", chatRoute);
