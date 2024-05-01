@@ -84,3 +84,12 @@ exports.updateGroupAvailabilities = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.getSelectedProperties = async (req, res) => {
+  try {
+    const groupAvailabilities = await GroupAvailabilities.find();
+    res.status(200).json(groupAvailabilities);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};

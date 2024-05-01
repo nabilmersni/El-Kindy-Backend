@@ -30,6 +30,7 @@ process.on("unhandledRejection", (err) => {
 
 //-------------------------Mailer ---------------
 const { sendTestEmail } = require("./mailer");
+const PayementController = require("./controllers/PayementController");
 
 app.get("/send-email", async (req, res) => {
   try {
@@ -44,3 +45,4 @@ app.get("/send-email", async (req, res) => {
     res.status(400).send(error.message);
   }
 });
+app.get("/user-side/AllEvents/:paymentId",PayementController.Verify);

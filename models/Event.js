@@ -11,6 +11,7 @@ var EventSchema = new Schema({
     EventPlace: String,
     Latitude: Number,  
     Longitude: Number,
+    PaymentStatus: { type: Number, enum: [0, 1], default: 0 },
 
     users: [
         {

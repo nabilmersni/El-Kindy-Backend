@@ -12,4 +12,9 @@ router.delete(
 router.get("/:id", groupAvailabilitiesController.getGroupAvailabilitiesById);
 router.put("/:id", groupAvailabilitiesController.updateGroupAvailabilities);
 
+router.get(
+  "/filter/groupAvailabilities",
+  groupAvailabilitiesController.getSelectedProperties
+);
+
 module.exports = router;

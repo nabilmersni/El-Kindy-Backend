@@ -14,6 +14,26 @@ const {
 const QuizUser = require("../models/QuizUser");
 
 // ****************CRUD_Quiz**********************
+
+router.get("/users/:userId/quizzes/check", async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    // Appelez la méthode du service pour récupérer les quiz de l'utilisateur
+    const quizzes = await quizController.getQuizzesByUserIdcheck(userId);
+    res.json(quizzes);
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des quizs de l'utilisateur:",
+      error
+    );
+    res.status(500).json({
+      error: "Erreur lors de la récupération des quizs de l'utilisateur",
+    });
+  }
+});
+
+router.get("/:userId/attestation", quizController.getUserQuizDetails);
 router.get("/quiz/:quizId/starteduserscount", async (req, res) => {
   try {
     const quizId = req.params.quizId;

@@ -36,7 +36,7 @@ exports.createCourse = async (req, res) => {
 
 exports.getAllCourses = async (req, res) => {
   try {
-    const courses = await Course.find();
+    const courses = await Course.find().populate("subCategoryId");
     res.status(200).json(courses);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -63,7 +63,7 @@ exports.getCourseById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const course = await Course.findById(id);
+    const course = await Course.findById(id).populate("subCategoryId");
 
     if (!course) {
       return res.status(404).json({ message: "Course not found" });

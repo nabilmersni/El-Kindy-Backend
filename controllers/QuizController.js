@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const QuizUser = require("../models/QuizUser");
 const Question = require("../models/Question");
 const Answer = require("../models/Answer");
+const User = require("../models/userModel");
 
 exports.createQuiz = async (req, res) => {
   try {
@@ -69,6 +70,9 @@ exports.deleteQuiz = async (req, res) => {
 
     // Supprimer toutes les réponses associées à ces questions
     await Answer.deleteMany({ question: { $in: quiz.questions } });
+
+    // Supprimer tous les utilisateurs ayant ce quiz dans leur champ 'quiz'
+    await QuizUser.deleteMany({ quiz: id });
 
     // Supprimer le quiz par son ID
     const deletedQuiz = await Quiz.findByIdAndDelete(id);
@@ -289,4 +293,33 @@ exports.QuizUserStarted = async (req, res, next) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+exports.getUserQuizDetails = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+    const quizzes = await QuizUser.find({
+      user: userId,
+      isCompleted: true,
+    }).populate("quiz");
+    const quizDetails = quizzes.map((quizUser) => ({
+      level: quizUser.quiz.level,
+      score: quizUser.score,
+    }));
+    res.json({
+      fullName: user.fullname,
+      quizDetails: quizDetails,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getQuizzesByUserIdcheck = async (userId) => {
+  const quizzes = await QuizUser.find({ user: userId, isCompleted: true });
+  return quizzes;
 };

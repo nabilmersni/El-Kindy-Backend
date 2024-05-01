@@ -23,6 +23,7 @@ const availabilitiesRoutes = require("./routes/availabilitiesRoutes.js");
 const userAvailabilitiesRoutes = require("./routes/userAvailabilitiesRoutes.js");
 const groupsRoutes = require("./routes/groupRoutes.js");
 const groupAvailabilitiesRoutes = require("./routes/groupAvailabilitiesRoutes.js");
+const reservationIndivRoutes = require("./routes/reservationIndivRoutes.js");
 
 const classroomRoutes = require("./routes/classroomRoutes.js");
 //end course routes
@@ -57,6 +58,7 @@ app.use("/availabilities", availabilitiesRoutes);
 app.use("/userAvailabilities", userAvailabilitiesRoutes);
 app.use("/groups", groupsRoutes);
 app.use("/groupAvailabilities", groupAvailabilitiesRoutes);
+app.use("/reservationIndiv", reservationIndivRoutes);
 
 app.use("/classrooms", classroomRoutes);
 //end course
