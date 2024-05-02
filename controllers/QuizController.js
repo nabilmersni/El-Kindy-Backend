@@ -58,26 +58,20 @@ exports.updateQuiz = async (req, res) => {
 exports.deleteQuiz = async (req, res) => {
   const { id } = req.params;
   try {
-    // Trouver le quiz par son ID
     const quiz = await Quiz.findById(id);
 
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    // Supprimer toutes les questions associées à ce quiz
     await Question.deleteMany({ _id: { $in: quiz.questions } });
 
-    // Supprimer toutes les réponses associées à ces questions
     await Answer.deleteMany({ question: { $in: quiz.questions } });
 
-    // Supprimer tous les utilisateurs ayant ce quiz dans leur champ 'quiz'
     await QuizUser.deleteMany({ quiz: id });
 
-    // Supprimer le quiz par son ID
     const deletedQuiz = await Quiz.findByIdAndDelete(id);
 
-    // Répondre avec le quiz supprimé
     res
       .status(200)
       .json({ message: "Quiz deleted successfully", quiz: deletedQuiz });
@@ -93,24 +87,24 @@ exports.assignUserToQuiz = async (req, res) => {
   try {
     const { quizId } = req.params;
     const { email } = req.body;
-    // Recherchez le quiz
+
     const quiz = await Quiz.findById(quizId);
     if (!quiz) {
       return res.status(404).json({ error: "Quiz non trouvé" });
     }
-    // Recherchez l'utilisateur dans la collection users
+
     const usersCollection = mongoose.connection.collection("users");
     const user = await usersCollection.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
-    // Créez une entrée dans la collection QuizUser
+
     const quizUser = new QuizUser({
       user: user._id,
       quiz: quiz._id,
     });
     await quizUser.save();
-    // Ajoutez l'utilisateur à la liste des utilisateurs du quiz
+
     quiz.users.push(user._id);
     await quiz.save();
 
@@ -131,11 +125,10 @@ exports.assignUserToQuiz = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     const { quizId } = req.params;
-    // Recherchez les entrées QuizUser associées à l'ID du quiz
+
     const quizUsers = await QuizUser.find({ quiz: quizId });
-    // Extrayez les IDs des utilisateurs de la liste des entrées QuizUser
+
     const userIds = quizUsers.map((quizUser) => quizUser.user);
-    // Utilisez les IDs des utilisateurs pour rechercher directement les utilisateurs dans la collection "users"
     const users = await mongoose.connection
       .collection("users")
       .find({ _id: { $in: userIds } })
@@ -153,7 +146,6 @@ exports.updateIsStarted = async (userId, quizId, isStarted) => {
     const updatedQuizUser = await QuizUser.findOneAndUpdate(
       { user: userId, quiz: quizId },
       { $set: { isStarted: isStarted } }
-      //{ new: true }
     );
 
     return updatedQuizUser;
@@ -175,22 +167,10 @@ exports.getStartedQuizzesByUserId = async (userId) => {
     throw error;
   }
 };
-// exports.getQuizzesByUserId = async (req, res) => {
-//   const userId = req.params.userId;
-//   try {
-//     const quizzes = await QuizUser.getQuizzesByUserId(userId);
-//     res.json(quizzes);
-//   } catch (error) {
-//     console.error("Erreur lors de la récupération des quiz :", error);
-//     res.status(500).json({
-//       message: "Une erreur s'est produite lors de la récupération des quiz.",
-//     });
-//   }
-// };
+
 exports.getQuizzesByUserId = async (req, res) => {
-  const userId = req.params.userId; // Récupération de l'ID de l'utilisateur depuis les paramètres de l'URL
+  const userId = req.params.userId;
   try {
-    // Appel de la méthode avec l'ID de l'utilisateur
     const quizzes = await QuizUser.getQuizzesByUserId(userId);
     res.json(quizzes);
   } catch (error) {
@@ -201,15 +181,6 @@ exports.getQuizzesByUserId = async (req, res) => {
   }
 };
 
-// exports.getQuizWithQuestionsAndAnswers = async (req, res, next) => {
-//   try {
-//     const quizId = req.params.quizId; // Supposant que vous passez l'ID du quiz via les paramètres d'URL
-//     const quiz = await Quiz.getQuizWithQuestionsAndAnswers(quizId);
-//     res.json(quiz);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 //********************************************************** */
 
 exports.getQuizWithQuestionsAndAnswers = async (req, res, next) => {
@@ -217,7 +188,6 @@ exports.getQuizWithQuestionsAndAnswers = async (req, res, next) => {
     const userId = req.params.userId;
     const quizId = req.params.quizId;
 
-    // Vérifier si l'utilisateur a accès à ce quiz
     const quizUser = await QuizUser.findOne({ user: userId, quiz: quizId });
     if (!quizUser) {
       return res.status(404).json({ message: "Quiz not found for this user" });
@@ -239,7 +209,6 @@ exports.removeUserFromQuiz = async (req, res) => {
   const { userId, quizId } = req.params;
 
   try {
-    // Supprimer l'utilisateur du quiz
     const quiz = await Quiz.findById(quizId);
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
@@ -250,7 +219,6 @@ exports.removeUserFromQuiz = async (req, res) => {
     );
     await quiz.save();
 
-    // Supprimer le lien dans QuizUser
     await QuizUser.deleteOne({ user: userId, quiz: quizId });
 
     res.json({ message: "User removed from quiz successfully" });
@@ -264,7 +232,7 @@ exports.getQuizUser = async (req, res, next) => {
   try {
     const userId = req.params.userId;
     const quizId = req.params.quizId;
-    // Vérifier si l'utilisateur a accès à ce quiz
+
     const quizUser = await QuizUser.findOne({ user: userId, quiz: quizId });
     if (!quizUser) {
       return res.status(404).json({ message: "quiz user not found" });
@@ -279,8 +247,7 @@ exports.QuizUserStarted = async (req, res, next) => {
   try {
     const userId = req.params.userId;
     const quizId = req.params.quizId;
-    // Vérifier si l'utilisateur a accès à ce quiz
-    //const quizUser = await QuizUser.findOne({ user: userId, quiz: quizId });
+
     const quizUser = await QuizUser.findOneAndUpdate(
       { user: userId, quiz: quizId },
       { $set: { isCompleted: true } },

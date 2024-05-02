@@ -132,12 +132,10 @@ exports.uploadImage = async (req, res) => {
   });
 };
 
-
-
-
 exports.getJoinedEvents = async (req, res) => {
   try {
-    const events = await eventParticipant.find({ userId: req.user.id })
+    const events = await eventParticipant
+      .find({ userId: req.user.id })
       .populate("eventId")
       .select("eventId");
 
@@ -145,41 +143,7 @@ exports.getJoinedEvents = async (req, res) => {
 
     res.json(joinedEventIds);
   } catch (error) {
-    console.error('Error in getJoinedEvents:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error in getJoinedEvents:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
-
-// exports.generatePDF= async (req, res) => {
-//   try {
-//     const { EventName, EventDate, PriceTicket } = req.params.body;
-
-//     // Create a new PDF document
-//     const doc = new PDFDocument();
-
-//     // Add event details to the PDF
-//     doc.text(`Event Name: ${EventName}`);
-//     doc.text(`Event Date: ${EventDate}`);
-//     doc.text(`Ticket Price: ${PriceTicket}`);
-
-//     // Set the response headers to indicate a PDF attachment
-//     // Generate a QR code with the event details
-//     const qrCode = qr.image(`Event Name: ${EventName}\nEvent Date: ${EventDate}\nTicket Price: ${PriceTicket}`, { type: 'png' });
-//     doc.image(qrCode, 100, 100); // Adjust the position as needed
-
-//     // Set the response headers to indicate a PDF attachment
-//     res.setHeader('Content-Type', 'application/pdf');
-//     res.setHeader('Content-Disposition', 'attachment; filename="ticket_with_qr.pdf"');
-
-//     // Pipe the PDF document to the response
-//     doc.pipe(res);
-
-//     // End the document
-//     doc.end();
-//   } catch (error) {
-//     console.error('Error generating PDF with QR:', error);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// }
-

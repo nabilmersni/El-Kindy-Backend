@@ -29,6 +29,7 @@
     "nodemailer": "^6.9.12",
     "nodemon": "^3.1.0",
     "pdfkit": "^0.15.0",
+    "python-shell": "^5.0.0",
     "spawn-sync": "^2.0.0",
     "validator": "^13.11.0",
     "ytdl-core": "^4.11.5"

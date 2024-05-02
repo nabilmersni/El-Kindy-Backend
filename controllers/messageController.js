@@ -22,12 +22,6 @@ exports.getMessages = catchAsync(async (req, res, next) => {
   const { chatId } = req.params;
   const messages = await MessageModel.find({ chatId });
 
-  // const messages = await MessageModel.updateMany(
-  //   { chatId },
-  //   { $set: { seen: true } },
-  //   { new: true }
-  // );
-
   res.status(200).json({
     status: "success",
     data: {
@@ -42,8 +36,6 @@ exports.getLastMessage = catchAsync(async (req, res, next) => {
   const lastMessage = await MessageModel.findOne({ chatId }).sort({
     createdAt: -1,
   });
-  // const messages = await MessageModel.find({ chatId }).sort({ createdAt: -1 });
-  // const lastMessage = messages[0];
 
   res.status(200).json({
     status: "success",

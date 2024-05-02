@@ -72,7 +72,6 @@ exports.signUp = catchAsync(async (req, res, next) => {
   const token = signToken(newUser._id, process.env.JWT_EXPIRE_IN_EMAIL);
 
   await sendEmail(
-    // "justtrash010@gmail.com",
     newUser.email,
     "Confirm Email",
     emailTemplateBody
@@ -118,7 +117,6 @@ exports.login = catchAsync(async (req, res, next) => {
     const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
 
     await sendEmail(
-      // "justtrash010@gmail.com",
       user.email,
       "Confirm Email",
       emailTemplateBody
@@ -169,7 +167,6 @@ exports.authGoogle = catchAsync(async (req, res, next) => {
     const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
 
     await sendEmail(
-      // "justtrash010@gmail.com",
       user.email,
       "Confirm Email",
       emailTemplateBody
@@ -376,7 +373,6 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
     });
   } catch (error) {
     if (error.message === "jwt expired") {
-      // const expiredToken = jwt.decode(req.body.token);
       const expiredToken = jwt.verify(req.body.token, process.env.JWT_SECRET, {
         ignoreExpiration: true,
       });
@@ -393,7 +389,6 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
       const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
 
       await sendEmail(
-        // "justtrash010@gmail.com",
         user.email,
         "Forgot Password Request",
         emailTemplateBody
@@ -430,7 +425,6 @@ exports.forgotPasswordRequest = catchAsync(async (req, res, next) => {
   const token = signToken(user._id, process.env.JWT_EXPIRE_IN_EMAIL);
 
   await sendEmail(
-    // "justtrash010@gmail.com",
     user.email,
     "Forgot Password Request",
     emailTemplateBody

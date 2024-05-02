@@ -55,9 +55,9 @@ exports.removeVoiceAudio = async (audioUrl) => {
     const result = spawnSync(ffmpegPath, [
       "-i",
       audioUrl,
-      "-vn", // Disable video recording
+      "-vn",
       "-acodec",
-      "libmp3lame", // Specify the MP3 codec
+      "libmp3lame",
       "-f",
       "mp3",
       filePath,
@@ -66,7 +66,6 @@ exports.removeVoiceAudio = async (audioUrl) => {
     console.log("Conversion successful");
     console.log("Audio file saved:", filePath);
 
-    // Step 1: Upload the file using the first endpoint
     const uploadFormData = new FormData();
     uploadFormData.append("fileName", fs.createReadStream(filePath));
 
@@ -84,7 +83,6 @@ exports.removeVoiceAudio = async (audioUrl) => {
     const uploadResponse = await axios.request(uploadOptions);
     const fileName = uploadResponse.data.file_name;
 
-    // Step 2: Process the file using the second endpoint
     const processParams = new URLSearchParams();
     processParams.set("file_name", fileName);
 
@@ -102,18 +100,12 @@ exports.removeVoiceAudio = async (audioUrl) => {
     const processResponse = await axios.request(processOptions);
     const vocalRemovedLink = processResponse.data.instrumental_path;
 
-    //Clean up the uploaded file
     await unlinkFile(filePath);
 
     return vocalRemovedLink;
-
-    // res.status(200).json({
-    //   status: "success",
-    //   vocalRemovedLink: vocalRemovedLink,
-    // });
   } catch (error) {
     console.error("Error:", error);
-    //Clean up the uploaded file
+
     await unlinkFile(filePath);
   }
 };

@@ -68,4 +68,37 @@ app.use("/api/v1/chats", chatRoute);
 app.use("/api/v1/messages", messageRoute);
 app.use("/api/v1/karaoke", karaokeRoute);
 
+/********chatgpt********/
+
+const { PythonShell } = require("python-shell");
+
+app.post("/chat", (req, res) => {
+  const pythonScriptPath = "./chatgpt.py";
+  const { message } = req.body;
+
+  const options = {
+    pythonOptions: ["-u"],
+    scriptPath: "./",
+    args: [message],
+  };
+
+  const pyShell = new PythonShell(pythonScriptPath, options);
+
+  let response = "";
+
+  pyShell.on("message", (msg) => {
+    console.log("Message reçu du script Python:", msg);
+    response += msg;
+  });
+
+  pyShell.end((err) => {
+    if (err) {
+      console.error("Erreur lors de l'exécution du script Python:", err);
+      return res.status(500).json({ error: err.message });
+    }
+    console.log("Exécution du script Python terminée.");
+    return res.json({ response: response });
+  });
+});
+
 module.exports = app;

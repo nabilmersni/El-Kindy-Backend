@@ -19,7 +19,6 @@ router.get("/users/:userId/quizzes/check", async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    // Appelez la méthode du service pour récupérer les quiz de l'utilisateur
     const quizzes = await quizController.getQuizzesByUserIdcheck(userId);
     res.json(quizzes);
   } catch (error) {
@@ -107,13 +106,13 @@ router.get(
 router.post("/scores", async (req, res) => {
   try {
     const { userId, quizId, score } = req.body;
-    // Recherche du QuizUser existant pour cet utilisateur et ce quiz
+
     const existingQuizUser = await QuizUser.findOneAndUpdate(
       { user: userId, quiz: quizId },
       { score: score },
-      { new: true } // Pour renvoyer le document mis à jour
+      { new: true }
     );
-    // Si le QuizUser n'existe pas encore, créez-en un nouveau
+
     if (!existingQuizUser) {
       const newQuizUser = new QuizUser({
         user: userId,
@@ -179,7 +178,7 @@ router.get("/:quizId/questions/:questionId", async (req, res) => {
 router.post("/:id/image", QuestionController.uploadImage);
 router.put(
   "/:quizId/questions/:questionId",
-  upload.single("image"), // Middleware pour gérer le fichier image
+  upload.single("image"),
   QuestionController.updateQuestionInQuiz
 );
 

@@ -21,26 +21,6 @@ exports.createChat = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.userChats = catchAsync(async (req, res, next) => {
-//   if (!req.params.userId) {
-//     return res.status(404).json({
-//       status: "error",
-//       message: "the userId is required",
-//     });
-//   }
-
-//   const chats = await ChatModel.find({
-//     "members.user": req.params.userId,
-//   }).sort({ updatedAt: -1 });
-
-//   res.status(200).json({
-//     status: "success",
-//     data: {
-//       chats,
-//     },
-//   });
-// });
-
 exports.userChats = catchAsync(async (req, res, next) => {
   if (!req.params.userId) {
     return res.status(404).json({

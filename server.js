@@ -45,4 +45,4 @@ app.get("/send-email", async (req, res) => {
     res.status(400).send(error.message);
   }
 });
-app.get("/user-side/AllEvents/:paymentId",PayementController.Verify);
+app.get("/user-side/AllEvents/:paymentId", PayementController.Verify);

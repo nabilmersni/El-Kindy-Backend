@@ -110,31 +110,8 @@ exports.assignUserToEvent = async (req, res) => {
   }
 };
 
-/*   getUsers fy URL  */
-// exports.getUsers = async (req, res) => {
-//     try {
-//         const { eventId } = req.params;
 
-//         const eventParticipants = await EventParticipant.find({ event: eventId });
 
-//         const userIds = eventParticipants.flatMap(participant => participant.users.map(user => user.user));
-
-//         const usersData = await mongoose.connection.collection("users")
-//             .find({ _id: { $in: userIds } })
-//             .toArray();
-
-//         console.log("User IDs:", userIds);
-//         console.log("Users Data:", usersData);
-
-//         return res.status(200).json(usersData);
-
-//     } catch (error) {
-//         console.error("Error in getUsers:", error);
-//         return res.status(500).json({
-//             error: "An error occurred while fetching users by event ID",
-//         });
-//     }
-// };
 
 exports.getUsers = async (req, res) => {
   try {

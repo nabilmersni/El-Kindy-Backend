@@ -16,7 +16,6 @@ const QuizUserSchema = new Schema({
   },
   score: {
     type: Number,
-    // required: true,
   },
   isCompleted: {
     type: Boolean,

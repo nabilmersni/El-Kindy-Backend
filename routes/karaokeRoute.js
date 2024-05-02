@@ -9,7 +9,7 @@ const path = require("path");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./public/mp3"); // Set your upload directory
+    cb(null, "./public/mp3");
   },
   filename: function (req, file, cb) {
     cb(null, file.originalname);
@@ -25,6 +25,5 @@ router.post(
   upload.single("audioFile"),
   karaokeController.mixAudio
 );
-// router.post("/removeVoiceAudio", karaokeController.removeVoiceAudio);
 
 module.exports = router;

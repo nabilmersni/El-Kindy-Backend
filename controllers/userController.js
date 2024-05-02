@@ -34,10 +34,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
     query = { _id: { $nin: excludeUserIdArray } };
   }
 
-  // Find users based on the query
   const users = await User.find(query);
-
-  // const users = await User.find();
 
   res.status(200).json({
     status: "success",
@@ -180,7 +177,6 @@ exports.addser = catchAsync(async (req, res, next) => {
   const token = signToken(newUser._id, process.env.JWT_EXPIRE_IN_EMAIL);
 
   await sendEmail(
-    // "justtrash010@gmail.com",
     newUser.email,
     "Confirm Email",
     emailTemplateBody

@@ -55,7 +55,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default:
       "https://firebasestorage.googleapis.com/v0/b/el-kindy-auth.appspot.com/o/defaultProfileIMG.png?alt=media&token=3195bf63-8036-4290-9583-f0f4da435935",
-    // required: [true, 'A user must have a photo']
   },
   cv_url: {
     type: String,
@@ -92,25 +91,16 @@ userSchema.pre("save", async function (next) {
 
   this.password = await bcrypt.hash(this.password, 12);
 
-  this.confirmPassword = undefined; //bech mayetsabech fil Db
+  this.confirmPassword = undefined;
   next();
 });
 
 userSchema.pre("save", function (next) {
   if (!this.isModified("password") || this.isNew) return next();
 
-  this.changePasswordAt = Date.now() - 1000; //juste no4emnou eli token tesna3mba3ed matbadel el password
+  this.changePasswordAt = Date.now() - 1000;
   next();
 });
-
-// userSchema.pre(/^find/, function (next) {
-//   this.find({ active: true });
-//   next();
-// });
-
-// userSchema.methods.cryptPassword = async function (password) {
-//   return await bcrypt.hash(password, 12);
-// };
 
 userSchema.methods.checkPassword = async function (candidatePass, userPass) {
   //this.password najmouch 5ater select false
