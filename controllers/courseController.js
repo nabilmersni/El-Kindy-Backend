@@ -3,6 +3,8 @@ const multer = require("multer");
 const path = require("path");
 const SubCategory = require("../models/subCategory");
 
+const { PythonShell } = require("python-shell");
+
 // exports.createCourse = async (req, res) => {
 //   try {
 //     const course = new Course(req.body);
@@ -141,5 +143,44 @@ exports.uploadImage = (req, res) => {
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
+  });
+};
+
+exports.Sentiment = (req, res) => {
+  // Specify the path to your Python script
+  const pythonScriptPath = "courseScript.py";
+
+  // Extract comment from the request
+  const { comment } = req.body; // Assuming comment is sent in the request body
+
+  // Specify options for the Python script execution
+  const options = {
+    pythonOptions: ["-u"], // unbuffered output
+    scriptPath:
+      "C:/Users/braie/OneDrive/Bureau/integrationPi/integration-v7/El-Kindy-Backend/controllers/", // path to the directory containing the Python script
+    args: [comment], // Pass comment as command-line argument
+  };
+
+  // Create a new PythonShell instance with the specified options
+  const pyShell = new PythonShell(pythonScriptPath, options);
+
+  // Create a variable to store the message from the Python script
+  let message = "";
+
+  // Run the Python script
+  pyShell.on("message", (msg) => {
+    console.log("Received message from Python script:", msg);
+    message += msg; // Append each message received from the Python script
+  });
+
+  pyShell.end((err) => {
+    if (err) {
+      console.error("Error during Python script execution:", err);
+      // If there's an error, return the error message
+      return res.status(500).json({ error: err.message });
+    }
+    console.log("Python script execution finished.");
+    // If the script executed successfully, return the message
+    return res.json({ message: message });
   });
 };

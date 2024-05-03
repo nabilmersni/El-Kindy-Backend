@@ -11,6 +11,22 @@ exports.createReservation = async (req, res) => {
   }
 };
 
+exports.getReservationsById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const reservation = await Reservation.findById(id);
+
+    if (!reservation) {
+      return res.status(404).json({ message: "reservation not found" });
+    }
+
+    res.status(200).json(reservation);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 exports.getReservationsByUserId = async (req, res) => {
   const { userId } = req.params;
 
@@ -26,7 +42,9 @@ exports.getReservationsByTeacherId = async (req, res) => {
   const { teacherId } = req.params;
 
   try {
-    const reservations = await Reservation.find({ teacherId });
+    const reservations = await Reservation.find({ teacherId })
+      .populate("userId")
+      .populate("availabilityId");
     res.status(200).json(reservations);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -75,14 +93,14 @@ exports.updateReservationById = async (req, res) => {
 exports.checkoutReservation = async (req, res) => {
   const url = "https://developers.flouci.com/api/generate_payment";
   const payload = {
-    app_token: "674c158d-c8c0-4514-8220-6bbab6cca2e9",
-    app_secret: "90438553-6f9a-44a5-8ccc-4152e731d765",
+    app_token: "263f8983-9abd-43da-ba09-bcd31130c386",
+    app_secret: "5b22ddee-5083-440d-ab20-4bc40be2168e",
     amount: 5000,
     accept_card: true,
     session_timeout_secs: 2000,
     success_link: `http://localhost:5173/user-side/`,
     fail_link: "http://localhost:5173/fail",
-    developer_tracking_id: "8622f0a9-d841-4886-8727-c36182662e2b",
+    developer_tracking_id: "287f869f-d95f-47cb-ac3e-984ffc12adf6",
   };
 
   await axios
@@ -110,3 +128,14 @@ exports.checkoutReservation = async (req, res) => {
 //       console.log(err.message);
 //     });
 // };
+
+exports.getReservationsByUserIdAndCourseId = async (req, res) => {
+  const { userId, courseId } = req.params;
+
+  try {
+    const reservations = await Reservation.find({ userId, courseId });
+    res.status(200).json(reservations);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};

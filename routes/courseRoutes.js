@@ -10,4 +10,6 @@ router.get("/:id", courseController.getCourseById); // Ajoutez cette ligne pour 
 router.post("/upload/:id", courseController.uploadImage);
 router.put("/:id", courseController.updateCourse); // Ajoutez cette ligne pour mettre à jour un cours par ID
 
+router.post("/sentiment/ai", courseController.Sentiment);
+
 module.exports = router;
